@@ -76,6 +76,17 @@ sealed class Message {
 
         @Serializable
         @JsonIgnoreUnknownKeys
+        data class BotTtsText(
+            val data: BotLlmTextData
+        ) : Rtvi() {
+            @Serializable
+            data class BotLlmTextData(
+                val text: String
+            )
+        }
+
+        @Serializable
+        @JsonIgnoreUnknownKeys
         object BotLlmStopped : Rtvi()
 
         @Serializable
@@ -111,6 +122,7 @@ object MessageSerializer : JsonContentPolymorphicSerializer<Message>(Message::cl
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<Message> {
         return when (val label = element.jsonObject["label"]?.jsonPrimitive?.content) {
             "rtvi-ai" -> when (val type = element.jsonObject["type"]?.jsonPrimitive?.content) {
+                "bot-tts-text" -> Message.Rtvi.BotTtsText.serializer()
                 "bot-llm-text" -> Message.Rtvi.BotLlmText.serializer()
                 "bot-llm-stopped" -> Message.Rtvi.BotLlmStopped.serializer()
                 "user-transcription" -> Message.Rtvi.UserTranscription.serializer()
@@ -270,12 +282,14 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
                         }
 
                         is Message.Rtvi.BotOutput -> {
-                            if (message.data.spoken && message.data.aggregatedBy == "sentence")
-                                _currentTranscript.update { transcript ->
-                                    transcript.copy(
-                                        text = transcript.text + message.data.text
-                                    )
-                                }
+                        }
+
+                        is Message.Rtvi.BotTtsText -> {
+                            _currentTranscript.update { transcript ->
+                                transcript.copy(
+                                    text = (transcript.text + " " + message.data.text).trim()
+                                )
+                            }
                         }
                     }
                 }
