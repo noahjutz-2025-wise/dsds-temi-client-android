@@ -1,0 +1,2 @@
+app/src/main/res/drawable*/** filter=lfs diff=lfs merge=lfs -text
+app/src/main/res/mipmap*/** filter=lfs diff=lfs merge=lfs -text
