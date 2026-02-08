@@ -211,8 +211,7 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
     fun onMessage(msg: String) {
         Log.d("MainVM", "onMessage: $msg")
         try {
-            val message: Message = Json.decodeFromString(msg)
-            when (message) {
+            when (val message: Message = Json.decodeFromString(msg)) {
                 is Message.RobotAction -> {
                     when (message.action) {
                         "follow_me" -> Robot.getInstance().beWithMe()
@@ -256,7 +255,7 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
                     }
                 }
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
     }
 
