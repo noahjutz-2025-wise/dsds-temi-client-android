@@ -27,6 +27,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonIgnoreUnknownKeys
+import kotlinx.serialization.json.JsonNamingStrategy
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -57,6 +58,19 @@ sealed class Message {
             @Serializable
             data class BotLlmTextData(
                 val text: String
+            )
+        }
+
+        @Serializable
+        @JsonIgnoreUnknownKeys
+        data class BotOutput(
+            val data: BotOutputData
+        ) : Rtvi() {
+            @Serializable
+            data class BotOutputData(
+                val text: String,
+                val spoken: Boolean,
+                val aggregatedBy: String
             )
         }
 
@@ -103,6 +117,7 @@ object MessageSerializer : JsonContentPolymorphicSerializer<Message>(Message::cl
                 "user-stopped-speaking" -> Message.Rtvi.UserStoppedSpeaking.serializer()
                 "bot-llm-started" -> Message.Rtvi.BotLlmStarted.serializer()
                 "user-started-speaking" -> Message.Rtvi.UserStartedSpeaking.serializer()
+                "bot-output" -> Message.Rtvi.BotOutput.serializer()
                 else -> throw IllegalArgumentException("Unknown type: $type")
             }
 
@@ -146,9 +161,15 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
         _transcriptHistory.value = emptyList()
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
+    private val json = Json {
+        namingStrategy = JsonNamingStrategy.SnakeCase
+        ignoreUnknownKeys = true
+    }
+
     private val client = HttpClient {
         install(ContentNegotiation) {
-            json()
+            json(json)
         }
         install(Auth) {
             basic {
@@ -211,7 +232,7 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
     fun onMessage(msg: String) {
         Log.d("MainVM", "onMessage: $msg")
         try {
-            when (val message: Message = Json.decodeFromString(msg)) {
+            when (val message: Message = json.decodeFromString(msg)) {
                 is Message.RobotAction -> {
                     when (message.action) {
                         "follow_me" -> Robot.getInstance().beWithMe()
@@ -222,11 +243,6 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
                 is Message.Rtvi -> {
                     when (message) {
                         is Message.Rtvi.BotLlmText -> {
-                            _currentTranscript.update { transcript ->
-                                transcript.copy(
-                                    text = transcript.text + message.data.text
-                                )
-                            }
                         }
 
                         is Message.Rtvi.UserTranscription -> {
@@ -252,10 +268,20 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
 
                         Message.Rtvi.UserStoppedSpeaking -> {
                         }
+
+                        is Message.Rtvi.BotOutput -> {
+                            if (message.data.spoken && message.data.aggregatedBy == "sentence")
+                                _currentTranscript.update { transcript ->
+                                    transcript.copy(
+                                        text = transcript.text + message.data.text
+                                    )
+                                }
+                        }
                     }
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
