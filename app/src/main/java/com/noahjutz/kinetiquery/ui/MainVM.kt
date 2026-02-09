@@ -255,6 +255,11 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
                 is Message.Rtvi -> {
                     when (message) {
                         is Message.Rtvi.BotLlmText -> {
+                            _currentTranscript.update { transcript ->
+                                transcript.copy(
+                                    text = (transcript.text + message.data.text).trim()
+                                )
+                            }
                         }
 
                         is Message.Rtvi.UserTranscription -> {
@@ -288,11 +293,7 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
                         }
 
                         is Message.Rtvi.BotTtsText -> {
-                            _currentTranscript.update { transcript ->
-                                transcript.copy(
-                                    text = (transcript.text + " " + message.data.text).trim()
-                                )
-                            }
+
                         }
                     }
                 }
