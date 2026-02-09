@@ -247,8 +247,15 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
             when (val message: Message = json.decodeFromString(msg)) {
                 is Message.RobotAction -> {
                     when (message.action) {
-                        "follow_me" -> Robot.getInstance().beWithMe()
-                        "stop_moving" -> Robot.getInstance().stopMovement()
+                        "follow_me" -> {
+                            Log.d("MainVM", "follow_me")
+                            Robot.getInstance().beWithMe()
+                        }
+
+                        "stop_moving" -> {
+                            Log.d("MainVM", "stop_moving")
+                            Robot.getInstance().stopMovement()
+                        }
                     }
                 }
 
