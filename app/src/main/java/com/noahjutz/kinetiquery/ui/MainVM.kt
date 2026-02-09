@@ -258,10 +258,13 @@ class MainVM(private val application: Application) : AndroidViewModel(applicatio
                         }
 
                         is Message.Rtvi.UserTranscription -> {
-                            _currentTranscript.update { transcript ->
-                                transcript.copy(
-                                    text = message.data.text
-                                )
+                            viewModelScope.launch {
+                                delay(200)
+                                _currentTranscript.update { transcript ->
+                                    transcript.copy(
+                                        text = message.data.text
+                                    )
+                                }
                             }
                         }
 
